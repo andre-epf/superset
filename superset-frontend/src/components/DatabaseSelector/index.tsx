@@ -266,13 +266,13 @@ export default function DatabaseSelector({
   } = useSchemas({
     dbId: currentDb?.value,
     catalog: currentCatalog?.value,
-    onSuccess: (schemas, isFetched) => {
+    onSuccess: (schemas, isFetched, defaultSchema) => {
       if (schemas.length === 1) {
         changeSchema(schemas[0]);
       } else if (
         !schemas.find(schemaOption => schemaRef.current === schemaOption.value)
       ) {
-        changeSchema(undefined);
+        changeSchema(defaultSchema || undefined);
       }
 
       if (isFetched) {
@@ -282,7 +282,7 @@ export default function DatabaseSelector({
     onError: () => handleError(t('There was an error loading the schemas')),
   });
 
-  const schemaOptions = schemaData || EMPTY_SCHEMA_OPTIONS;
+  const schemaOptions = schemaData?.schemas || EMPTY_SCHEMA_OPTIONS;
 
   function changeCatalog(catalog: CatalogOption | null | undefined) {
     setCurrentCatalog(catalog);
@@ -298,7 +298,7 @@ export default function DatabaseSelector({
     refetch: refetchCatalogs,
   } = useCatalogs({
     dbId: showCatalogSelector ? currentDb?.value : undefined,
-    onSuccess: (catalogs, isFetched) => {
+    onSuccess: (catalogs, isFetched, defaultCatalog) => {
       if (!showCatalogSelector) {
         changeCatalog(null);
       } else if (catalogs.length === 1) {
@@ -308,7 +308,7 @@ export default function DatabaseSelector({
           catalogOption => catalogRef.current === catalogOption.value,
         )
       ) {
-        changeCatalog(undefined);
+        changeCatalog(defaultCatalog || undefined);
       }
 
       if (showCatalogSelector && isFetched) {
@@ -322,7 +322,7 @@ export default function DatabaseSelector({
     },
   });
 
-  const catalogOptions = catalogData || EMPTY_CATALOG_OPTIONS;
+  const catalogOptions = catalogData?.catalogs || EMPTY_CATALOG_OPTIONS;
 
   function changeDatabase(
     value: { label: string; value: number },
