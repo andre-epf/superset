@@ -25,6 +25,7 @@ import os
 
 from celery.schedules import crontab
 from flask_caching.backends.filesystemcache import FileSystemCache
+from custom_security.custom_security_manager import CustomSecurityManager
 
 logger = logging.getLogger()
 
@@ -40,6 +41,11 @@ EXAMPLES_PASSWORD = os.getenv("EXAMPLES_PASSWORD")
 EXAMPLES_HOST = os.getenv("EXAMPLES_HOST")
 EXAMPLES_PORT = os.getenv("EXAMPLES_PORT")
 EXAMPLES_DB = os.getenv("EXAMPLES_DB")
+
+
+CUSTOM_SECURITY_MANAGER = CustomSecurityManager
+
+SECRET_KEY = os.getenv("SUPERSET_SECRET_KEY")
 
 # The SQLAlchemy connection string.
 SQLALCHEMY_DATABASE_URI = (
