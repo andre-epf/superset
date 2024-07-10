@@ -17,7 +17,9 @@
 
 # Ignore everything
 *
+
 # DON'T ignore the .gitignore
 !.gitignore
 !superset_config.py
 !superset_config_local.example
+!custom_security_manager.py
