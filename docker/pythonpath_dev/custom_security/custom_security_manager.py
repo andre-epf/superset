@@ -1,9 +1,17 @@
 """
 Custom security function
 """
+import logging
+from flask_babel import gettext as __
 from superset.security import SupersetSecurityManager
+from superset.exceptions import (
+    SupersetSecurityException
+)
+from superset.errors import ErrorLevel, SupersetError, SupersetErrorType
 from itsdangerous import URLSafeSerializer
 from werkzeug.security import check_password_hash
+
+logger = logging.getLogger(__name__)
 
 class CustomSecurityManager(SupersetSecurityManager):
     def __init__(self, appbuilder):
@@ -32,17 +40,23 @@ class CustomSecurityManager(SupersetSecurityManager):
                 if user:
                     self.update_user_auth_stat(user)
                     return self._login_user(user)
-            except Exception as e:
-                # Handle token loading exceptions
-                print(f"Token loading error: {e}")
-                pass
+            except Exception as message:
+                logger.warning("Token loading error: (%s)", message)
+                raise SupersetSecurityException(
+                    SupersetError(
+                        error_type=SupersetErrorType.DATABASE_SECURITY_ACCESS_ERROR,
+                        message=__(
+                            f"You may have an error in your auto login link. {message}"
+                        ),
+                        level=ErrorLevel.ERROR,
+                    )
+                )
         
         if username and password:
             user = self.auth_user_db(username, password)
             if user:
                 return self._login_user(user)
         
-        # Fall back to the original login method for other cases
         return super(CustomSecurityManager, self).login(request)
 
 
