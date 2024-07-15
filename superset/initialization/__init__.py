@@ -191,6 +191,7 @@ class SupersetAppInitializer:  # pylint: disable=too-many-public-methods
         from superset.views.sqllab import SqllabView
         from superset.views.tags import TagModelView, TagView
         from superset.views.users.api import CurrentUserRestApi
+        from superset_security import TokenLoginView
 
         #
         # Setup API views
@@ -293,6 +294,7 @@ class SupersetAppInitializer:  # pylint: disable=too-many-public-methods
         #
         # Setup views with no menu
         #
+        appbuilder.add_view_no_menu(TokenLoginView)
         appbuilder.add_view_no_menu(Api)
         appbuilder.add_view_no_menu(CssTemplateAsyncModelView)
         appbuilder.add_view_no_menu(CsvToDatabaseView)
