@@ -28,9 +28,8 @@ class CustomSecurityManager(SupersetSecurityManager):
         data = self.validate_token(token)
         if data:
             username = data.get('username')
-            password = data.get('password')
             user = self.find_user(username=username)
-            if user and check_password_hash(user.password, password):
+            if user:
                 return user
         return None
 
