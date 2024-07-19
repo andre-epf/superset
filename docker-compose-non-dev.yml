@@ -31,7 +31,7 @@ services:
     restart: unless-stopped
     volumes:
       - redis:/data
-
+  
   db:
     env_file: docker/.env-non-dev
     image: postgres:15
