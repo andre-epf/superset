@@ -104,7 +104,6 @@ class TokenLoginView(BaseView):
             if user:
                 login_user(user)
                 flash(_("Login successful"), "success")
-                logging.info("User authenticated successfully.")
                 return redirect('/superset/welcome/')
             
         flash(_("Invalid or expired token"), "danger")
