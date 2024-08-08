@@ -22,8 +22,11 @@
 # It ends up being imported by docker/superset_config.py which is loaded by
 # superset/config.py
 #
+import logging
 import os
 from superset_security import CustomSecurityManager
+
+logger = logging.getLogger()
 
 CUSTOM_SECURITY_MANAGER = CustomSecurityManager
 
@@ -37,3 +40,14 @@ LOGO_RIGHT_TEXT = os.getenv("SUPERSET_LOGO_RIGHT_TEXT", "")
 
 PUBLIC_ROLE_LIKE = os.getenv("SUPERSET_PUBLIC_ROLE_LIKE", "Gamma")
 AUTH_ROLE_PUBLIC = os.getenv("SUPERSET_AUTH_ROLE_PUBLIC", "Public")
+
+FEATURE_FLAGS =  {
+  "EMBEDDED_SUPERSET": True,
+}
+
+ENABLE_CORS = True
+CORS_OPTIONS = {
+    "supports_credentials": True, 
+    "origins": ['*']
+}
+GUEST_ROLE_NAME = os.getenv("SUPERSET_GUEST_ACCESS_ROLE", "Public")

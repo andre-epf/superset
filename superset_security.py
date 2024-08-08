@@ -1,27 +1,36 @@
 # custom_security.py
+import os
 from flask_appbuilder import BaseView, expose
-from flask import request, redirect, url_for, flash, g
-from flask_appbuilder.security.decorators import has_access
+from flask import request, redirect, url_for, flash
 from flask_babel import lazy_gettext as _
 from superset.security import SupersetSecurityManager
 import jwt
-from werkzeug.security import check_password_hash
 import logging
 from flask_login import login_user
+from typing import Dict, List, Tuple
+from flask_appbuilder.security.sqla.models import PermissionView, Permission, ViewMenu, Role
+from sqlalchemy.orm import contains_eager
 
 
 class CustomSecurityManager(SupersetSecurityManager):
     def __init__(self, appbuilder):
         super(CustomSecurityManager, self).__init__(appbuilder)
-        self.secret_key = appbuilder.app.config['SECRET_KEY']
 
     def validate_token(self, token):
         try:
-            payload = jwt.decode(token, self.secret_key, algorithms=['HS256'])
+            payload = jwt.decode(token, os.getenv("SUPERSET_SECRET_KEY"), algorithms=['HS256'])
             return payload
-        except jwt.ExpiredSignatureError:
+        
+        except jwt.ExpiredSignatureError as message:
+            logging.debug(f"Token expired: {message}")
             return None
-        except jwt.DecodeError:
+        
+        except jwt.DecodeError as message:
+            logging.debug(f"Token decoding error: {message}")
+            return None
+        
+        except jwt.InvalidSignatureError as message:
+            logging.debug(f"Invalid signature: {message}")
             return None
 
     def auth_user_token(self, token):
@@ -31,7 +40,58 @@ class CustomSecurityManager(SupersetSecurityManager):
             user = self.find_user(username=username)
             if user:
                 return user
+            
         return None
+    
+    def get_user_roles_permissions(self, user) -> Dict[str, List[Tuple[str, str]]]:
+        """
+        Fetch all roles and permissions for a specific user with additional validation.
+        """
+        if not user.roles:
+            raise AttributeError("User object does not have roles")
+
+        # Initialize result dictionary
+        result: Dict[str, List[Tuple[str, str]]] = {}
+        db_roles_ids = []
+
+        for role in user.roles:
+            # Validation: Ensure role is not None and has a name attribute
+            if role is None or not hasattr(role, 'name'):
+                raise ValueError("Role is invalid or does not have a name")
+
+            # Initialize role in result
+            result[role.name] = []
+
+            # Check if role is a built-in role
+            if role.name in self.builtin_roles:
+                for permission in self.builtin_roles[role.name]:
+                    result[role.name].append((permission[1], permission[0]))
+            else:
+                db_roles_ids.append(role.id)
+
+        # Query permission views for database roles
+        permission_views = (
+            self.appbuilder.get_session.query(PermissionView)
+            .join(Permission)
+            .join(ViewMenu)
+            .join(PermissionView.role)
+            .filter(Role.id.in_(db_roles_ids))
+            .options(contains_eager(PermissionView.permission))
+            .options(contains_eager(PermissionView.view_menu))
+            .options(contains_eager(PermissionView.role))
+        ).all()
+
+        for permission_view in permission_views:
+            for role_item in permission_view.role:
+                if role_item.name in result:
+                    result[role_item.name].append(
+                        (
+                            permission_view.permission.name,
+                            permission_view.view_menu.name,
+                        )
+                    )
+
+        return result
 
 class TokenLoginView(BaseView):
     route_base = "/"
@@ -44,6 +104,8 @@ class TokenLoginView(BaseView):
             if user:
                 login_user(user)
                 flash(_("Login successful"), "success")
+                logging.info("User authenticated successfully.")
                 return redirect('/superset/welcome/')
+            
         flash(_("Invalid or expired token"), "danger")
         return redirect(url_for('AuthDBView.login'))
