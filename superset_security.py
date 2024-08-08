@@ -1,7 +1,7 @@
 # custom_security.py
 import os
 from flask_appbuilder import BaseView, expose
-from flask import request, redirect, url_for, flash
+from flask import request, redirect, url_for, flash, current_app
 from flask_babel import lazy_gettext as _
 from superset.security import SupersetSecurityManager
 import jwt
@@ -10,7 +10,10 @@ from flask_login import login_user
 from typing import Dict, List, Tuple
 from flask_appbuilder.security.sqla.models import PermissionView, Permission, ViewMenu, Role
 from sqlalchemy.orm import contains_eager
-
+from superset.security.guest_token import (
+    GuestToken,
+    GuestUser
+)
 
 class CustomSecurityManager(SupersetSecurityManager):
     def __init__(self, appbuilder):
@@ -55,16 +58,14 @@ class CustomSecurityManager(SupersetSecurityManager):
         db_roles_ids = []
 
         for role in user.roles:
-            # Validation: Ensure role is not None and has a name attribute
+
             if role is None or not hasattr(role, 'name'):
                 raise ValueError("Role is invalid or does not have a name")
 
-            # Initialize role in result
             result[role.name] = []
 
-            # Check if role is a built-in role
-            if role.name in self.builtin_roles:
-                for permission in self.builtin_roles[role.name]:
+            if role.name in super().builtin_roles:
+                for permission in super().builtin_roles[role.name]:
                     result[role.name].append((permission[1], permission[0]))
             else:
                 db_roles_ids.append(role.id)
@@ -92,6 +93,13 @@ class CustomSecurityManager(SupersetSecurityManager):
                     )
 
         return result
+    
+    def get_guest_user_from_token(self, token: GuestToken) -> GuestUser:
+        return self.guest_user_cls(
+            token=token,
+            roles=[self.find_role("Public")],
+        )
+
 
 class TokenLoginView(BaseView):
     route_base = "/"
