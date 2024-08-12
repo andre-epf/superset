@@ -363,7 +363,11 @@ class BaseViz:  # pylint: disable=too-many-public-methods
         timeseries_limit_metric = self.form_data.get("timeseries_limit_metric")
 
         # apply row limit to query
-        row_limit = int(self.form_data.get("row_limit") or config["ROW_LIMIT"])
+        row_limit_str: str | None = self.form_data.get("row_limit", config["ROW_LIMIT"]) 
+        if row_limit_str is not None:
+            row_limit: int = int(row_limit_str)
+        else:
+            row_limit: int = 0
         row_limit = apply_max_row_limit(row_limit)
 
         # default order direction
